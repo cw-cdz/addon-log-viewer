@@ -1,23 +1,24 @@
 # Home Assistant Community Add-on: Log Viewer
 
-[![GitHub Release][releases-shield]][releases]
-![Project Stage][project-stage-shield]
-[![License][license-shield]](LICENSE.md)
 
-![Supports aarch64 Architecture][aarch64-shield]
-![Supports amd64 Architecture][amd64-shield]
-![Supports armhf Architecture][armhf-shield]
-![Supports armv7 Architecture][armv7-shield]
-![Supports i386 Architecture][i386-shield]
+## ⚠️ About This Fork
 
-[![Github Actions][github-actions-shield]][github-actions]
-![Project Maintenance][maintenance-shield]
-[![GitHub Activity][commits-shield]][commits]
+Home Assistant Core stopped creating the `home-assistant.log` file in recent versions. This fork restores that functionality by replicating the exact log rotation logic that was removed from HA Core.
 
-[![Discord][discord-shield]][discord]
-[![Community Forum][forum-shield]][forum]
+### What This Add-on Does
 
-[![Buy me a coffee][buymeacoffee-shield]][buymeacoffee]
+This modified version of the Log Viewer add-on:
+
+- **Captures logs** using the `ha core logs --follow` command
+- **Writes them to file** at `/config/home-assistant.log` (configurable)
+- **Replicates HA's original rotation logic**:
+  - Single backup on startup (default HA behavior)
+  - Or daily rotation with configurable retention (1-365 days)
+- Uses the same `TimedRotatingFileHandler` and `RotatingFileHandler` classes that Home Assistant Core used before removal
+
+For configuration details and options, see the [full documentation][docs].
+
+---
 
 Browser-based log utility for Home Assistant.
 
