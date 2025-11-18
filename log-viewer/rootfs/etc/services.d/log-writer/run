@@ -1,0 +1,24 @@
+#!/command/with-contenv bashio
+# ==============================================================================
+# Home Assistant Community Add-on: Log Viewer
+# Runs the Log Writer (captures logs to file)
+# ==============================================================================
+
+# Export configuration as environment variables for Python script
+export LOG_FILE=$(bashio::config 'log_file')
+export LOG_ROTATE_DAYS=$(bashio::config 'log_rotate_days')
+export VERBOSE=$(bashio::config 'verbose')
+
+bashio::log.info "Starting Home Assistant Log Writer..."
+bashio::log.info "Log file: ${LOG_FILE}"
+
+if bashio::config.has_value 'log_rotate_days'; then
+    bashio::log.info "Rotation: $(bashio::config 'log_rotate_days') days"
+else
+    bashio::log.info "Rotation: Single backup on startup (Home Assistant default)"
+fi
+
+# Give Home Assistant API a moment to be ready
+sleep 2
+
+exec python3 /usr/local/bin/log-writer.py

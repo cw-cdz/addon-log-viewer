@@ -6,22 +6,34 @@ FROM ${BUILD_FROM}
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Install requirements for add-on
+ARG BUILD_ARCH
+ARG HA_CLI_VERSION="4.42.0"
 RUN \
     apk add --no-cache \
         nginx=1.24.0-r16 \
+        curl \
+        python3 \
     \
     && apk add --no-cache --virtual .build-dependencies \
-        git=2.43.6-r0 \
+        git \
     \
     && VERSION="c5b60e75dab012bb5fb01096898c643fafe09bb5" \
     && npm -g i \
         "git+https://github.com/frenck/ws-log.git#${VERSION}" \
+    \
+    && curl -L -s -o /usr/bin/ha \
+        "https://github.com/home-assistant/cli/releases/download/${HA_CLI_VERSION}/ha_${BUILD_ARCH}" \
+    && chmod a+x /usr/bin/ha \
     \
     && apk del --no-cache --purge .build-dependencies \
     && rm -f -r /etc/nginx
 
 # Copy root file system
 COPY rootfs /
+
+# Copy the log writer script
+COPY log-writer.py /usr/local/bin/
+RUN chmod a+x /usr/local/bin/log-writer.py
 
 # Build arguments
 ARG BUILD_ARCH

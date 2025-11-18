@@ -1,0 +1,11 @@
+#!/command/with-contenv bashio
+# ==============================================================================
+# Home Assistant Community Add-on: Log Viewer
+# Take down the S6 supervision tree when Log Writer fails
+# ==============================================================================
+if [[ "${1}" -ne 0 ]] && [[ "${1}" -ne 256 ]]; then
+  bashio::log.warning "Log Writer crashed, halting add-on"
+  /run/s6/basedir/bin/halt
+fi
+
+bashio::log.info "Log Writer stopped, restarting..."

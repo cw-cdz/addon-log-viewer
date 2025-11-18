@@ -32,60 +32,40 @@ logger:
 Example add-on configuration:
 
 ```yaml
-log_level: info
-ssl: false
-certfile: fullchain.pem
-keyfile: privkey.pem
+# Home Assistant default behavior (single backup on startup)
+log_rotate_days: null
+log_file: "/config/home-assistant.log"
+verbose: false
 ```
 
 **Note**: _This is just an example, don't copy and paste it! Create your own!_
 
-### Option: `log_level`
+### Option: `log_rotate_days`
 
-The `log_level` option controls the level of log output by the addon and can
-be changed to be more or less verbose, which might be useful when you are
-dealing with an unknown issue. Possible values are:
+The `log_rotate_days` option controls how Home Assistant logs are rotated and retained. This replicates the exact behavior that was removed from Home Assistant Core.
 
-- `trace`: Show every detail, like all called internal functions.
-- `debug`: Shows detailed debug information.
-- `info`: Normal (usually) interesting events.
-- `warning`: Exceptional occurrences that are not errors.
-- `error`: Runtime errors that do not require immediate action.
-- `fatal`: Something went terribly wrong. Add-on becomes unusable.
+- `null` (default): Single backup on startup (Home Assistant default behavior)
+- `1-365`: Rotate logs at midnight, keeping the specified number of days
 
-Please note that each level automatically includes log messages from a
-more severe level, e.g., `debug` also shows `info` messages. By default,
-the `log_level` is set to `info`, which is the recommended setting unless
-you are troubleshooting.
+**Note**: _When set to `null`, logs are backed up to `home-assistant.log.1` on each add-on startup. When set to a number, logs rotate daily at midnight and older logs are automatically deleted after the specified number of days._
 
-### Option: `ssl`
+### Option: `log_file`
 
-Enables/Disables SSL on the Log Viewer. Set it `true` to enable it,
-`false` otherwise.
+The path to the log file where Home Assistant logs will be written.
 
-**Note**: _The SSL settings only apply to direct access and has no effect
-on the Ingress service._
+- Default: `/config/home-assistant.log`
+- Can be customized to any writable path
 
-### Option: `certfile`
+**Note**: _The directory must exist and be writable by the add-on. The add-on will create the directory if it doesn't exist._
 
-The certificate file to use for SSL.
+### Option: `verbose`
 
-**Note**: _The file MUST be stored in `/ssl/`, which is the default_
+Enables verbose logging from the `ha core logs` command.
 
-### Option: `keyfile`
+- `false` (default): Standard log output
+- `true`: Include more detailed logs
 
-The private key file to use for SSL.
-
-**Note**: _The file MUST be stored in `/ssl/`, which is the default_
-
-### Option: `leave_front_door_open`
-
-Adding this option to the add-on configuration allows you to disable
-authentication on the add-on by setting it to `true` and leaving the
-username and password empty.
-
-**Note**: _We STRONGLY suggest, not to use this, even if this add-on is
-only exposed to your internal network. USE AT YOUR OWN RISK!_
+**Note**: _This corresponds to the `--verbose` flag in `ha core logs --follow --verbose`._
 
 ## Changelog & Releases
 

@@ -3,8 +3,7 @@ name: Log Viewer
 version: dev
 slug: logviewer
 description: Browser-based log utility for Home Assistant
-url: https://github.com/hassio-addons/addon-log-viewer
-codenotary: codenotary@frenck.dev
+url: https://github.com/cw-cdz/addon-log-viewer
 init: false
 ingress: true
 ingress_stream: true
@@ -15,22 +14,31 @@ arch:
   - amd64
   - armv7
 homeassistant_api: true
+hassio_api: true
+hassio_role: manager
 auth_api: true
 ports:
   80/tcp: null
 ports_description:
   80/tcp: Web interface (Not required for Ingress)
 map:
-  - homeassistant_config
+  - type: homeassistant_config
+    read_only: false
+    path: /config
   - share
   - ssl
 options:
   ssl: true
   certfile: fullchain.pem
   keyfile: privkey.pem
+  log_file: /config/home-assistant.log
+  verbose: false
 schema:
   log_level: list(trace|debug|info|notice|warning|error|fatal)?
   ssl: bool
   certfile: str
   keyfile: str
   leave_front_door_open: bool?
+  log_rotate_days: int(1,365)?
+  log_file: str
+  verbose: bool

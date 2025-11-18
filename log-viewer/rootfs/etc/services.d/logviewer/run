@@ -1,7 +1,34 @@
 #!/command/with-contenv bashio
 # ==============================================================================
 # Home Assistant Community Add-on: Log Viewer
-# Runs the Log Viewer
+# Runs the Log Viewer Web UI
 # ==============================================================================
-bashio::log.info "Starting Log Viewer..."
-exec ws-log "/homeassistant/home-assistant.log"
+
+LOG_FILE=$(bashio::config 'log_file')
+
+bashio::log.info "Starting Log Viewer Web UI..."
+bashio::log.info "Viewing: ${LOG_FILE}"
+bashio::log.info "Waiting for log-writer service to create log file..."
+
+# Wait for log file to be created (max 30 seconds) with progress messages
+max_wait=30
+counter=0
+while [[ ! -f "${LOG_FILE}" ]] && [[ $counter -lt $max_wait ]]; do
+    sleep 1
+    counter=$((counter + 1))
+    
+    # Show progress every 5 seconds using division-based check
+    if [[ $((counter / 5)) -gt $(((counter - 1) / 5)) ]]; then
+        remaining=$((max_wait - counter))
+        bashio::log.info "Still waiting for log file... (${counter}s elapsed, ${remaining}s remaining)"
+    fi
+done
+
+if [[ ! -f "${LOG_FILE}" ]]; then
+    bashio::log.error "Log file ${LOG_FILE} not created after ${max_wait} seconds!"
+    bashio::log.error "Check if log-writer service started successfully"
+    exit 1
+fi
+
+bashio::log.info "Log file ready, starting viewer..."
+exec ws-log "${LOG_FILE}"
