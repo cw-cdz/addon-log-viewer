@@ -1,8 +1,8 @@
 ---
 name: Log Viewer
 version: dev
-slug: logviewer
-description: Browser-based log utility for Home Assistant
+slug: logviewer-ha-log
+description: Browser-based log utility for Home Assistant. Generates and creates the Home Assistant Log file removed in 2510
 url: https://github.com/cw-cdz/addon-log-viewer
 init: false
 ingress: true
