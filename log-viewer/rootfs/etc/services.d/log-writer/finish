@@ -1,11 +1,106 @@
 #!/command/with-contenv bashio
 # ==============================================================================
 # Home Assistant Community Add-on: Log Viewer
-# Take down the S6 supervision tree when Log Writer fails
+# Handle Log Writer crashes with configurable retry logic
 # ==============================================================================
-if [[ "${1}" -ne 0 ]] && [[ "${1}" -ne 256 ]]; then
-  bashio::log.warning "Log Writer crashed, halting add-on"
-  /run/s6/basedir/bin/halt
+
+RETRY_COUNTER_FILE="/tmp/log-writer-retry-count"
+LAST_SUCCESS_FILE="/tmp/log-writer-last-success"
+
+# Get max retries configuration (default to 3 if not set)
+if bashio::config.has_value 'log_writer_max_retries'; then
+    MAX_RETRIES=$(bashio::config 'log_writer_max_retries')
+else
+    MAX_RETRIES=3
 fi
 
-bashio::log.info "Log Writer stopped, restarting..."
+# Exit code from the service
+EXIT_CODE="${1}"
+
+# ------------------------------------------------------------------------------
+# 1. Handle Clean Shutdowns
+# ------------------------------------------------------------------------------
+# Clean shutdown (0) or SIGTERM (256/143) - not a crash
+if [[ "${EXIT_CODE}" -eq 0 ]] || [[ "${EXIT_CODE}" -eq 256 ]] || [[ "${EXIT_CODE}" -eq 143 ]]; then
+    bashio::log.info "Log Writer stopped gracefully"
+    rm -f "${RETRY_COUNTER_FILE}"
+    exit 0
+fi
+
+# ------------------------------------------------------------------------------
+# 2. Handle "No Retry" Mode (0)
+# ------------------------------------------------------------------------------
+if [[ "${MAX_RETRIES}" -eq 0 ]]; then
+    bashio::log.warning "Log Writer crashed (exit code: ${EXIT_CODE}), halting add-on (retries disabled)"
+    rm -f "${RETRY_COUNTER_FILE}"
+    /run/s6/basedir/bin/halt
+    exit 0
+fi
+
+# ------------------------------------------------------------------------------
+# 3. Check for Successful Run (Reset Counter)
+# ------------------------------------------------------------------------------
+# If service ran successfully for > 60 seconds, reset the retry counter
+if [[ -f "${LAST_SUCCESS_FILE}" ]]; then
+    LAST_SUCCESS=$(cat "${LAST_SUCCESS_FILE}")
+    CURRENT_TIME=$(date +%s)
+    UPTIME=$((CURRENT_TIME - LAST_SUCCESS))
+    
+    if [[ "${UPTIME}" -ge 60 ]]; then
+        bashio::log.debug "Log Writer ran successfully for ${UPTIME}s, resetting retry counter"
+        rm -f "${RETRY_COUNTER_FILE}"
+    fi
+fi
+
+# ------------------------------------------------------------------------------
+# 4. Increment Retry Count
+# ------------------------------------------------------------------------------
+if [[ -f "${RETRY_COUNTER_FILE}" ]]; then
+    RETRY_COUNT=$(cat "${RETRY_COUNTER_FILE}")
+else
+    RETRY_COUNT=0
+fi
+
+RETRY_COUNT=$((RETRY_COUNT + 1))
+echo "${RETRY_COUNT}" > "${RETRY_COUNTER_FILE}"
+
+# ------------------------------------------------------------------------------
+# 5. Determine Retry Action
+# ------------------------------------------------------------------------------
+SHOULD_RETRY=false
+
+if [[ "${MAX_RETRIES}" -eq -1 ]]; then
+    # Infinite retry mode
+    SHOULD_RETRY=true
+    bashio::log.warning "Log Writer crashed (exit code: ${EXIT_CODE}), attempt ${RETRY_COUNT} (infinite retry mode)"
+elif [[ "${RETRY_COUNT}" -le "${MAX_RETRIES}" ]]; then
+    # Limited retry mode
+    SHOULD_RETRY=true
+    bashio::log.warning "Log Writer crashed (exit code: ${EXIT_CODE}), attempt ${RETRY_COUNT}/${MAX_RETRIES}"
+fi
+
+# ------------------------------------------------------------------------------
+# 6. Execute Retry or Halt
+# ------------------------------------------------------------------------------
+if [[ "${SHOULD_RETRY}" == "true" ]]; then
+    # Exponential backoff with cap at 15 seconds
+    case "${RETRY_COUNT}" in
+        1) DELAY=2 ;;
+        2) DELAY=5 ;;
+        3) DELAY=10 ;;
+        *) DELAY=15 ;;
+    esac
+    
+    bashio::log.info "Waiting ${DELAY} seconds before restart..."
+    sleep "${DELAY}"
+    
+    bashio::log.info "Restarting Log Writer..."
+    exit 0
+else
+    # Max retries exceeded
+    bashio::log.error "Log Writer crashed ${RETRY_COUNT} times, maximum retries (${MAX_RETRIES}) exceeded"
+    bashio::log.error "Halting add-on to prevent restart loop"
+    rm -f "${RETRY_COUNTER_FILE}"
+    /run/s6/basedir/bin/halt
+    exit 0
+fi

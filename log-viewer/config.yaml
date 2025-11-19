@@ -42,3 +42,4 @@ schema:
   log_rotate_days: int(1,365)?
   log_file: str
   verbose: bool
+  log_writer_max_retries: int?

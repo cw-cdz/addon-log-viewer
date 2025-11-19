@@ -21,4 +21,7 @@ fi
 # Give Home Assistant API a moment to be ready
 sleep 2
 
+# Record start time for successful run tracking
+date +%s > /tmp/log-writer-last-success
+
 exec python3 /usr/local/bin/log-writer.py

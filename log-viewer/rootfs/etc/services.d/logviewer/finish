@@ -6,6 +6,8 @@
 if [[ "${1}" -ne 0 ]] && [[ "${1}" -ne 256 ]]; then
   bashio::log.warning "Log Viewer crashed, halting add-on"
   /run/s6/basedir/bin/halt
+  exit 1
 fi
 
 bashio::log.info "Log Viewer stopped, restarting..."
+exit 0

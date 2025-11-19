@@ -67,6 +67,15 @@ Enables verbose logging from the `ha core logs` command.
 
 **Note**: _This corresponds to the `--verbose` flag in `ha core logs --follow --verbose`._
 
+### Option: `log_writer_max_retries`
+
+Controls how the add-on handles log writer crashes (which can occur during Home Assistant restarts, system crashes, etc.).
+
+- `3` (default): Retry up to 3 times before halting the add-on
+- `0`: No retries - halt immediately on crash (strictest mode)
+- `1-100`: Retry the specified number of times before halting
+- `-1`: Infinite retries - always restart, never halt (most resilient mode)
+
 ## Changelog & Releases
 
 This repository keeps a change log using [GitHub's releases][releases]
